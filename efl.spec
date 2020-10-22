@@ -1,12 +1,11 @@
 Name:             efl
-Version:          1.21.0
-Release:          3
+Version:          1.23.3
+Release:          1
 Summary:          Collection of Enlightenment libraries
 License:          BSD and LGPLv2+ and GPLv2 and zlib
 URL:              http://enlightenment.org/
 Source0:          http://download.enlightenment.org/rel/libs/efl/efl-%{version}.tar.xz
-Patch0001:        efl-1.21.0-use-pragma-to-ignore-safe-printf.patch
-BuildRequires:    gcc-c++
+BuildRequires:    libunwind-devel gcc-c++
 BuildRequires:    bullet-devel libpng-devel libjpeg-devel gstreamer1-devel zlib-devel
 BuildRequires:    gstreamer1-plugins-base-devel libtiff-devel openssl-devel
 BuildRequires:    curl-devel dbus-devel glibc-devel fontconfig-devel freetype-devel
@@ -17,14 +16,13 @@ BuildRequires:    libXrender-devel libXScrnSaver-devel libXtst-devel libXcursor-
 BuildRequires:    libXp-devel libXi-devel mesa-libGL-devel mesa-libEGL-devel
 BuildRequires:    libblkid-devel libmount-devel systemd-devel harfbuzz-devel
 BuildRequires:    libwebp-devel tslib-devel SDL2-devel SDL-devel c-ares-devel
-BuildRequires:    libxkbcommon-devel uuid-devel libxkbcommon-x11-devel
+BuildRequires:    libxkbcommon-devel uuid-devel libxkbcommon-x11-devel avahi-devel
 BuildRequires:    pkgconfig(poppler-cpp) >= 0.12 pkgconfig(libspectre) pkgconfig(libraw)
 BuildRequires:    pkgconfig(librsvg-2.0) >= 2.14.0 pkgconfig(cairo) >= 1.0.0 ibus-devel
 BuildRequires:    doxygen systemd giflib-devel openjpeg2-devel libdrm-devel
-BuildRequires:    mesa-libwayland-egl-devel libwayland-client-devel >= 1.11.0
-BuildRequires:    libwayland-cursor-devel libwayland-server-devel wayland-protocols-devel >= 1.7
-BuildRequires:    autoconf automake libtool gettext-devel mesa-libGLES-devel
-BuildRequires:    mesa-libgbm-devel libinput-devel lua-devel cmake
+BuildRequires:    wayland-devel >= 1.11.0 wayland-protocols-devel >= 1.7
+BuildRequires:    ninja-build meson gettext-devel mesa-libGLES-devel
+BuildRequires:    mesa-libgbm-devel libinput-devel luajit-devel cmake
 Provides:         e_dbus = %{version}-%{release} ecore = %{version}-%{release} edje = %{version}-%{release}
 Provides:         eet = %{version}-%{release} eeze = %{version}-%{release} efreet = %{version}-%{release}
 Provides:         eina = %{version}-%{release} eio = %{version}-%{release} eldbus = %{version}-%{release}
@@ -63,20 +61,20 @@ for the efl library.
 
 %prep
 %autosetup -n %{name}-%{version} -p1
-autoreconf -ifv
-sed -i -e 's|/opt/efl-%{version}/share/|%{_datadir}/|' data/libeo.so.%{version}-gdb.py
 
 %build
-%configure --enable-xinput22 --enable-systemd --enable-image-loader-webp --enable-harfbuzz --enable-sdl --enable-ibus --disable-scim \
-    --enable-i-really-know-what-i-am-doing-and-that-this-will-probably-break-things-and-i-will-fix-them-myself-and-send-patches-abb \
-    --enable-fb --enable-wayland --enable-elput --enable-drm --enable-drm-hw-accel --with-opengl=full --disable-cocoa \
-    --with-profile=release --disable-neon --enable-lua-old --with-systemdunitdir=%{_userunitdir}
-%make_build V=1
+%{meson} -Dxinput22=true -Dsystemd=true -Devas-loaders-disabler=json -Dharfbuzz=true -Dsdl=true -Dfb=true \
+ -Dwl=true -Ddrm=true -Dopengl=full -Dinstall-eo-files=true -Dbindings=luajit,cxx -Dlua-interpreter=luajit \
+ -Dsystemdunitdir=%{_userunitdir}
+%{meson_build}
 
 %install
-%make_install
+%{meson_install}
 sed -i 's|ecore_sdl|ecore-sdl|g' %{buildroot}%{_libdir}/pkgconfig/elementary.pc
 sed -i 's|ecore_sdl|ecore-sdl|g' %{buildroot}%{_libdir}/pkgconfig/elementary-cxx.pc
+%if 0%{?__isa_bits} == 64
+mv %{buildroot}%{_datadir}/gdb/auto-load/usr/lib %{buildroot}%{_datadir}/gdb/auto-load%{_libdir}
+%endif
 chmod 644 src/bin/edje/edje_cc_out.c
 %delete_la
 %find_lang %{name}
@@ -107,9 +105,9 @@ chmod 644 src/bin/edje/edje_cc_out.c
 %{_bindir}/eina_modinfo
 %{_bindir}/el*
 %{_bindir}/embryo_cc
+%{_bindir}/emotion_test*
 %{_bindir}/eo*
 %{_bindir}/ethumb*
-%{_bindir}/evas_*
 %{_bindir}/vieet
 %attr(0755,root,root) %caps(cap_audit_write,cap_chown,cap_setuid,cap_sys_admin=pe) %{_bindir}/eeze_scanner
 %dir %{_datadir}/dbus-1/
@@ -125,12 +123,11 @@ chmod 644 src/bin/edje/edje_cc_out.c
 %{_datadir}/icons/hicolor/*/apps/elementary.png
 %{_datadir}/mime/packages/edje.xml
 %{_userunitdir}/ethumb.service
-%exclude %{_datadir}/elua/
+%{_datadir}/elua/
 
 %files devel
 %{_includedir}/*
 %{_bindir}/efl_wl_test*
-%{_bindir}/eina-bench-cmp
 %{_libdir}/cmake/*
 %{_libdir}/libe*.so
 %{_libdir}/pkgconfig/*
@@ -142,5 +139,8 @@ chmod 644 src/bin/edje/edje_cc_out.c
 %exclude %{_libdir}/cmake/Elua/
 
 %changelog
+* Fri Oct 16 2020 maminjie <maminjie1@huawei.com> - 1.23.3-1
+- Upgrade to 1.23.3
+
 * Fri Dec 06 2019 gulining<gulining1@huawei.com> - 1.21.0-3
 - Pakcage init
