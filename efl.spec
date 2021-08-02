@@ -1,6 +1,6 @@
 Name:             efl
 Version:          1.23.3
-Release:          1
+Release:          2
 Summary:          Collection of Enlightenment libraries
 License:          BSD and LGPLv2+ and GPLv2 and zlib
 URL:              http://enlightenment.org/
@@ -33,6 +33,8 @@ Provides:         evas = %{version}-%{release} evas-generic-loaders = %{version}
 Obsoletes:        e_dbus <= 1.7.10 ecore <= 1.7.10 edje <= 1.7.10 eet <= 1.7.10 eeze <= 1.7.10
 Obsoletes:        efreet <= 1.7.10 eio <= 1.7.10 elementary <= 1.17.1 embryo <= 1.7.10 emotion <= 1.7.10
 Obsoletes:        ethumb <= 1.7.10 evas <= 1.7.10 evas-generic-loaders <= 1.17.0 libeina <= 1.7.10
+
+Patch0001: bugfix-of-gcc-10.patch
 
 %description
 Enlightenment Foundation Libraries, or EFL, are the set of libraries
@@ -139,6 +141,9 @@ chmod 644 src/bin/edje/edje_cc_out.c
 %exclude %{_libdir}/cmake/Elua/
 
 %changelog
+* Mon Aug 2 2021 Shenemi Tu <tushenmei@huawei.com> - 1.23.3-2
+- bugfix-of-gcc-10.patch
+
 * Fri Oct 16 2020 maminjie <maminjie1@huawei.com> - 1.23.3-1
 - Upgrade to 1.23.3
 
